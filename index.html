@@ -1,147 +1,436 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teachable Machine - Classificador</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow — Gerenciador de Tarefas</title>
+  <meta name="description" content="Gerencie suas tarefas com estilo. Login, cadastro e painel completo." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            navy: {
+              950: '#0f172a',
+              900: '#0d1526',
+              800: '#1e293b',
+              700: '#273348',
+            },
+            glass: 'rgba(255,255,255,0.05)',
+          },
+          backdropBlur: { xs: '2px' },
+          keyframes: {
+            'fade-up': {
+              '0%': { opacity: '0', transform: 'translateY(20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            'fade-in': {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            'slide-down': {
+              '0%': { opacity: '0', transform: 'translateY(-8px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+          },
+          animation: {
+            'fade-up': 'fade-up 0.45s ease-out both',
+            'fade-in': 'fade-in 0.3s ease-out both',
+            'slide-down': 'slide-down 0.25s ease-out both',
+          },
+        },
+      },
+    };
+  </script>
 
-    <!-- Estilo customizado -->
-    <style>
-        body {
-            background: linear-gradient(135deg, #0d6efd, #0dcaf0);
-            color: white;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(56,189,248,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(99,102,241,0.07) 0%, transparent 60%);
+      min-height: 100vh;
+    }
 
-        .card {
-            border-radius: 20px;
-            padding: 20px;
-            background: #ffffff;
-            color: #333;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
+    /* Glass card */
+    .glass-card {
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    }
 
-        #webcam-container canvas {
-            border-radius: 15px;
-            width: 100%;
-            max-width: 300px;
-        }
+    /* Input base */
+    .input-field {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #f1f5f9;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: rgba(99,102,241,0.6);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    }
+    .input-field::placeholder { color: rgba(148,163,184,0.5); }
 
-        .btn-start {
-            border-radius: 50px;
-            padding: 12px 30px;
-            font-size: 18px;
-            font-weight: bold;
-        }
+    /* Primary button */
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(99,102,241,0.5);
+      filter: brightness(1.08);
+    }
+    .btn-primary:active { transform: translateY(0); }
 
-        .progress {
-            height: 25px;
-            border-radius: 20px;
-        }
+    /* Ghost button */
+    .btn-ghost {
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(148,163,184,1);
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .btn-ghost:hover {
+      background: rgba(255,255,255,0.06);
+      color: #f1f5f9;
+      border-color: rgba(255,255,255,0.2);
+    }
 
-        .label-text {
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-    </style>
+    /* Task card */
+    .task-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s;
+    }
+    .task-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .task-card.done { opacity: 0.45; }
+    .task-card.done .task-title { text-decoration: line-through; }
+
+    /* Badges */
+    .badge-work   { background: rgba(59,130,246,0.18); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .badge-pessoal { background: rgba(167,139,250,0.15); color: #a78bfa; border: 1px solid rgba(167,139,250,0.3); }
+    .badge-estudos { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.3); }
+
+    /* Screen transitions */
+    .screen { display: none; }
+    .screen.active { display: flex; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+
+    /* Select override */
+    select.input-field option { background: #1e293b; color: #f1f5f9; }
+  </style>
 </head>
+<body class="min-h-screen text-slate-100">
 
-<body>
+  <!-- ═══════════════════════════════
+       SCREEN: LOGIN
+  ════════════════════════════════ -->
+  <div id="screen-login" class="screen active min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md animate-fade-up">
+      <!-- Logo -->
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 mb-4">
+          <svg class="w-7 h-7 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-white tracking-tight">TaskFlow</h1>
+        <p class="text-slate-400 text-sm mt-1">Entre na sua conta para continuar</p>
+      </div>
 
-<div class="container text-center">
-    <div class="card mx-auto" style="max-width: 500px;">
-        
-        <h2 class="mb-3">📷 Classificador de Imagens</h2>
+      <!-- Card -->
+      <div class="glass-card rounded-2xl p-8">
+        <form id="form-login" novalidate>
+          <!-- Email -->
+          <div class="mb-5">
+            <label for="login-email" class="block text-sm font-medium text-slate-300 mb-2">E-mail</label>
+            <input
+              id="login-email"
+              type="email"
+              placeholder="seu@email.com"
+              autocomplete="email"
+              class="input-field w-full px-4 py-3 rounded-xl text-sm"
+            />
+          </div>
 
-        <button class="btn btn-primary btn-start mb-3" onclick="init()">
-            ▶ Iniciar Câmera
-        </button>
+          <!-- Senha -->
+          <div class="mb-2">
+            <label for="login-password" class="block text-sm font-medium text-slate-300 mb-2">Senha</label>
+            <input
+              id="login-password"
+              type="password"
+              placeholder="••••••••"
+              autocomplete="current-password"
+              class="input-field w-full px-4 py-3 rounded-xl text-sm"
+            />
+          </div>
 
-        <div id="webcam-container" class="mb-4"></div>
+          <!-- Error -->
+          <p id="login-error" class="text-red-400 text-xs mt-2 mb-4 hidden animate-slide-down"></p>
 
-        <div id="label-container"></div>
+          <!-- Submit -->
+          <button
+            id="btn-login-submit"
+            type="submit"
+            class="btn-primary w-full py-3 rounded-xl text-sm font-semibold text-white mt-4"
+          >
+            Entrar
+          </button>
+        </form>
 
+        <div class="relative my-6">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-white/8"></div>
+          </div>
+          <div class="relative flex justify-center text-xs text-slate-500">
+            <span class="bg-transparent px-3">ou</span>
+          </div>
+        </div>
+
+        <p class="text-center text-sm text-slate-400">
+          Não tem conta?
+          <button id="goto-register" class="text-indigo-400 hover:text-indigo-300 font-medium transition-colors ml-1">
+            Criar conta
+          </button>
+        </p>
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- TensorFlow + Teachable Machine -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
-<script>
-    const URL = "https://teachablemachine.withgoogle.com/models/KsW_ase-Y/";
+  <!-- ═══════════════════════════════
+       SCREEN: REGISTER
+  ════════════════════════════════ -->
+  <div id="screen-register" class="screen min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md animate-fade-up">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 mb-4">
+          <svg class="w-7 h-7 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-white tracking-tight">Criar Conta</h1>
+        <p class="text-slate-400 text-sm mt-1">Comece a organizar suas tarefas</p>
+      </div>
 
-    let model, webcam, labelContainer, maxPredictions;
+      <div class="glass-card rounded-2xl p-8">
+        <form id="form-register" novalidate>
+          <!-- Nome -->
+          <div class="mb-5">
+            <label for="register-name" class="block text-sm font-medium text-slate-300 mb-2">Nome completo</label>
+            <input
+              id="register-name"
+              type="text"
+              placeholder="Seu nome"
+              autocomplete="name"
+              class="input-field w-full px-4 py-3 rounded-xl text-sm"
+            />
+          </div>
 
-    async function init() {
-        const modelURL = URL + "model.json";
-        const metadataURL = URL + "metadata.json";
+          <!-- Email -->
+          <div class="mb-5">
+            <label for="register-email" class="block text-sm font-medium text-slate-300 mb-2">E-mail</label>
+            <input
+              id="register-email"
+              type="email"
+              placeholder="seu@email.com"
+              autocomplete="email"
+              class="input-field w-full px-4 py-3 rounded-xl text-sm"
+            />
+          </div>
 
-        model = await tmImage.load(modelURL, metadataURL);
-        maxPredictions = model.getTotalClasses();
+          <!-- Senha -->
+          <div class="mb-2">
+            <label for="register-password" class="block text-sm font-medium text-slate-300 mb-2">Senha</label>
+            <input
+              id="register-password"
+              type="password"
+              placeholder="Mínimo 6 caracteres"
+              autocomplete="new-password"
+              class="input-field w-full px-4 py-3 rounded-xl text-sm"
+            />
+          </div>
 
-        const flip = true;
-        webcam = new tmImage.Webcam(300, 300, flip);
-        await webcam.setup();
-        await webcam.play();
-        window.requestAnimationFrame(loop);
+          <p id="register-error" class="text-red-400 text-xs mt-2 mb-4 hidden animate-slide-down"></p>
+          <p id="register-success" class="text-emerald-400 text-xs mt-2 mb-4 hidden animate-slide-down"></p>
 
-        document.getElementById("webcam-container").innerHTML = "";
-        document.getElementById("webcam-container").appendChild(webcam.canvas);
+          <button
+            id="btn-register-submit"
+            type="submit"
+            class="btn-primary w-full py-3 rounded-xl text-sm font-semibold text-white mt-4"
+          >
+            Criar conta
+          </button>
+        </form>
 
-        labelContainer = document.getElementById("label-container");
-        labelContainer.innerHTML = "";
+        <div class="relative my-6">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-white/8"></div>
+          </div>
+          <div class="relative flex justify-center text-xs text-slate-500">
+            <span class="bg-transparent px-3">ou</span>
+          </div>
+        </div>
 
-        for (let i = 0; i < maxPredictions; i++) {
-            const div = document.createElement("div");
-            div.classList.add("mb-3");
+        <p class="text-center text-sm text-slate-400">
+          Já tem conta?
+          <button id="goto-login" class="text-indigo-400 hover:text-indigo-300 font-medium transition-colors ml-1">
+            Fazer login
+          </button>
+        </p>
+      </div>
+    </div>
+  </div>
 
-            div.innerHTML = `
-                <div class="label-text">Classe</div>
-                <div class="progress">
-                    <div class="progress-bar" role="progressbar" style="width: 0%">0%</div>
-                </div>
-            `;
 
-            labelContainer.appendChild(div);
-        }
-    }
+  <!-- ═══════════════════════════════
+       SCREEN: DASHBOARD
+  ════════════════════════════════ -->
+  <div id="screen-dashboard" class="screen min-h-screen flex-col">
 
-    async function loop() {
-        webcam.update();
-        await predict();
-        window.requestAnimationFrame(loop);
-    }
+    <!-- Header -->
+    <header class="sticky top-0 z-50 border-b border-white/8"
+            style="background:rgba(15,23,42,0.85); backdrop-filter: blur(20px);">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <!-- Brand + greeting -->
+        <div class="flex items-center gap-3">
+          <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/25">
+            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 leading-none">Bem-vindo de volta 👋</p>
+            <p id="header-username" class="text-sm font-semibold text-white leading-tight mt-0.5">—</p>
+          </div>
+        </div>
 
-    async function predict() {
-        const prediction = await model.predict(webcam.canvas);
+        <!-- Logout -->
+        <button
+          id="btn-logout"
+          class="btn-ghost px-4 py-2 rounded-lg text-xs font-medium flex items-center gap-2"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          Sair
+        </button>
+      </div>
+    </header>
 
-        for (let i = 0; i < maxPredictions; i++) {
-            const prob = prediction[i].probability;
-            const percent = (prob * 100).toFixed(1) + "%";
+    <!-- Main content -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 py-8 w-full flex-1">
 
-            const container = labelContainer.childNodes[i];
-            const label = container.querySelector(".label-text");
-            const bar = container.querySelector(".progress-bar");
+      <!-- ── Add Task Form ── -->
+      <section class="glass-card rounded-2xl p-6 mb-8 animate-fade-up">
+        <h2 class="text-base font-semibold text-white mb-5 flex items-center gap-2">
+          <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Nova Tarefa
+        </h2>
 
-            label.innerHTML = prediction[i].className;
-            bar.style.width = percent;
-            bar.innerHTML = percent;
+        <form id="form-add-task" novalidate>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <!-- Title -->
+            <div class="sm:col-span-2">
+              <label for="task-title" class="block text-xs font-medium text-slate-400 mb-1.5">
+                Título <span class="text-red-400">*</span>
+              </label>
+              <input
+                id="task-title"
+                type="text"
+                placeholder="O que precisa ser feito?"
+                class="input-field w-full px-4 py-2.5 rounded-xl text-sm"
+              />
+            </div>
 
-            // muda cor dinamicamente
-            bar.className = "progress-bar";
-            if (prob > 0.7) bar.classList.add("bg-success");
-            else if (prob > 0.4) bar.classList.add("bg-warning");
-            else bar.classList.add("bg-danger");
-        }
-    }
-</script>
+            <!-- Type -->
+            <div>
+              <label for="task-type" class="block text-xs font-medium text-slate-400 mb-1.5">Tipo</label>
+              <select
+                id="task-type"
+                class="input-field w-full px-4 py-2.5 rounded-xl text-sm cursor-pointer"
+              >
+                <option value="Trabalho">💼 Trabalho</option>
+                <option value="Pessoal">🙋 Pessoal</option>
+                <option value="Estudos">📚 Estudos</option>
+              </select>
+            </div>
 
+            <!-- Description -->
+            <div>
+              <label for="task-desc" class="block text-xs font-medium text-slate-400 mb-1.5">Descrição <span class="text-slate-600">(opcional)</span></label>
+              <textarea
+                id="task-desc"
+                rows="1"
+                placeholder="Detalhes adicionais..."
+                class="input-field w-full px-4 py-2.5 rounded-xl text-sm resize-none"
+                style="min-height:42px;"
+              ></textarea>
+            </div>
+          </div>
+
+          <p id="task-error" class="text-red-400 text-xs mb-3 hidden animate-slide-down"></p>
+
+          <button
+            id="btn-add-task"
+            type="submit"
+            class="btn-primary px-6 py-2.5 rounded-xl text-sm font-semibold text-white flex items-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Adicionar Tarefa
+          </button>
+        </form>
+      </section>
+
+      <!-- ── Task List ── -->
+      <section class="animate-fade-up" style="animation-delay:0.1s">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-semibold text-white flex items-center gap-2">
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+            </svg>
+            Minhas Tarefas
+          </h2>
+          <span id="task-count" class="text-xs text-slate-500 bg-white/5 border border-white/8 px-2.5 py-1 rounded-full"></span>
+        </div>
+
+        <!-- Empty state -->
+        <div id="tasks-empty" class="hidden text-center py-16">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/4 border border-white/8 mb-4">
+            <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+          </div>
+          <p class="text-slate-500 text-sm">Nenhuma tarefa cadastrada ainda.</p>
+          <p class="text-slate-600 text-xs mt-1">Adicione sua primeira tarefa acima!</p>
+        </div>
+
+        <!-- Task grid -->
+        <div id="tasks-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
